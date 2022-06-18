@@ -1,3 +1,3 @@
 # RustyPlugins
 
-A description of this package.
+A collection of my favorite Xcode plugins
