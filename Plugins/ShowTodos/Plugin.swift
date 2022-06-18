@@ -13,5 +13,6 @@ struct ShowTodos: CommandPlugin {
 
     func performCommand(context: PackagePlugin.PluginContext, arguments: [String]) async throws {
         
+        print("...running showtodos...")
     }
 }
