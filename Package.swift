@@ -5,6 +5,9 @@ import PackageDescription
 
 let package = Package(
     name: "RustyPlugins",
+    platforms: [
+        .macOS(.v11)
+    ],
     products: [
         .plugin(
             name: "ShowTodosPlugin",

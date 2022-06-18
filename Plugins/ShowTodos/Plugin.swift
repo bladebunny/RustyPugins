@@ -13,6 +13,10 @@ struct ShowTodos: CommandPlugin {
 
     func performCommand(context: PackagePlugin.PluginContext, arguments: [String]) async throws {
         
-        print("...running showtodos...")
+        for target in context.package.targets {
+            
+            guard let target = target as? SourceModuleTarget else { continue }
+            Diagnostics.remark("Inspecting target: \(target.name)")
+        }
     }
 }
