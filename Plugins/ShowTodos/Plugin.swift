@@ -11,8 +11,13 @@ import PackagePlugin
 @main
 struct ShowTodos: CommandPlugin {
 
+    // MARK: - Properties
+    private let defaultTokens = ["TODO", "FIXME", "HACK"]
+    private let patternFormat = #"\/\/(?: ?|\t?)(?:%@)(?:\:?|\ ?)(.*$)"#
+    
+    // MARK: - API
     func performCommand(context: PackagePlugin.PluginContext, arguments: [String]) async throws {
-
+        
         for target in context.package.targets {
             
             guard let target = target as? SourceModuleTarget else { continue }
@@ -23,15 +28,54 @@ struct ShowTodos: CommandPlugin {
         }
     }
     
+    // MARK: - File Processing
     private func processSourceFiles(_ paths: [Path]) throws {
+        
+        // Create the regex
+        let tokenPattern = self.defaultTokens.joined(separator: "|")
+        let searchPattern = String(format: self.patternFormat, tokenPattern)
+        let regex = try NSRegularExpression(pattern: searchPattern, options: [.anchorsMatchLines, .caseInsensitive])
+        
         for path in paths {
 
             // TODO: Switch to macOS 13 method
             let sourceFileURL = URL(fileURLWithPath: path.string)
             let data = try Data(contentsOf: sourceFileURL)
             let source = String(data: data, encoding: .utf8)
-            Diagnostics.remark("Processing: \(path.lastComponent): length: \(source?.count ?? 0)")
+            
+            if let source {
+
+                // Process
+                for result in processRegex(regex, source: source).flatMap({ $0 }) {
+                    Diagnostics.remark("☐ \(result.trimmingCharacters(in: .whitespacesAndNewlines)) {\(path.lastComponent)}")
+                }
+            }
         }
+    }
+    
+    // MARK: - Regex Processing
+    private func processRegex(_ regex: NSRegularExpression, source: String) -> [[String]] {
+     
+        let stringRange = NSRange(location: 0, length: source.utf16.count)
+        let matches = regex.matches(in: source, range: stringRange)
+        var result: [[String]] = []
+        
+        for match in matches {
+        
+            var groups: [String] = []
+            for rangeIndex in 1 ..< match.numberOfRanges {
+                let nsRange = match.range(at: rangeIndex)
+                guard !NSEqualRanges(nsRange, NSMakeRange(NSNotFound, 0)) else { continue }
+                let string = (source as NSString).substring(with: nsRange)
+                groups.append(string)
+            }
+            
+            if !groups.isEmpty {
+                result.append(groups)
+            }
+        }
+        
+        return result
     }
 }
 
@@ -53,43 +97,3 @@ extension ShowTodos: XcodeCommandPlugin {
 }
 #endif
 
-/*
-import Foundation
-
-let pattern = #"\/\/(?: ?|\t?)(?:TODO|FIXME)(?:\:?|\ ?)(.*$)"#
-let regex = try! NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines, .caseInsensitive])
-let testString = #"""
-// TODO switch to host(percentEncoded:) for macOS 13
-        if let host = url.host {
-            parts.append(URLPart(part: Strings.Serializers.URL.Parts.host, value: host))
-            
-            let hostParts = host.components(separatedBy: ".")
-            if hostParts.count > 2 {
-                
-                let domain = hostParts.dropFirst().joined(separator: ".")
-                parts.append(URLPart(part: Strings.Serializers.URL.Parts.domain, value: domain))
-                
-                if hostParts[0].lowercased() != "www" {
-                    parts.append(URLPart(part: Strings.Serializers.URL.Parts.subDomain, value: hostParts[0]))
-                }
-            }
-        }
-
-"""#
-let stringRange = NSRange(location: 0, length: testString.utf16.count)
-let matches = regex.matches(in: testString, range: stringRange)
-var result: [[String]] = []
-for match in matches {
-    var groups: [String] = []
-    for rangeIndex in 1 ..< match.numberOfRanges {
-        let nsRange = match.range(at: rangeIndex)
-        guard !NSEqualRanges(nsRange, NSMakeRange(NSNotFound, 0)) else { continue }
-        let string = (testString as NSString).substring(with: nsRange)
-        groups.append(string)
-    }
-    if !groups.isEmpty {
-        result.append(groups)
-    }
-}
-print(result)
-*/
