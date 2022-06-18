@@ -16,7 +16,24 @@ struct ShowTodos: CommandPlugin {
         for target in context.package.targets {
             
             guard let target = target as? SourceModuleTarget else { continue }
-            Diagnostics.remark("Inspecting target: \(target.name)")
+            let sourceFileList = target.sourceFiles(withSuffix: ".swift")
+            let sourceFiles = sourceFileList.map(\.path)
+            
+            for file in sourceFiles {
+                Diagnostics.remark("Processing: \(file.lastComponent)")
+            }
         }
     }
 }
+
+#if canImport(XcodeProjectPlugin)
+import XcodeProjectPlugin
+
+extension ShowTodos: XcodeCommandPlugin {
+
+    /// 👇 This entry point is called when operating on an Xcode project.
+    func performCommand(context: XcodePluginContext, arguments: [String]) throws {
+       print("Command plugin execution for Xcode project \(context.xcodeProject.displayName)")
+    }
+}
+#endif
