@@ -26,12 +26,11 @@ struct ShowTodos: CommandPlugin {
     private func processSourceFiles(_ paths: [Path]) throws {
         for path in paths {
 
-            if let sourceFileURL = URL(string: path.string) {
-                
-                let data = try Data(contentsOf: sourceFileURL)
-                let source = String(data: data, encoding: .utf8)
-                Diagnostics.remark("Processing: \(path.lastComponent): length: \(source?.count ?? 0)")
-            }
+            // TODO: Switch to macOS 13 method
+            let sourceFileURL = URL(fileURLWithPath: path.string)
+            let data = try Data(contentsOf: sourceFileURL)
+            let source = String(data: data, encoding: .utf8)
+            Diagnostics.remark("Processing: \(path.lastComponent): length: \(source?.count ?? 0)")
         }
     }
 }
